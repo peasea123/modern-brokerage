@@ -12,7 +12,7 @@ export const CONFIG = {
   maxDownloadsPerPurchase: 5,
 
   // PDF storage
-  pdfFileName: "The_Modern_Brokerage.pdf",
+  pdfFileName: "The-Modern-Brokerage.pdf",
   pdfBlobUrl: process.env.PDF_BLOB_URL || "",
 
   // Stripe (stub for now)
