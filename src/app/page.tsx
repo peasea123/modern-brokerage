@@ -151,18 +151,32 @@ export default function Home() {
         <h2 className="text-3xl md:text-4xl font-bold text-navy mb-8 text-center">
           About the Author
         </h2>
-        <div className="text-gray-700 leading-relaxed max-w-2xl mx-auto text-center">
-          <p className="mb-4">
-            <strong className="text-navy">Dr. Philip Seagraves, PhD</strong> is a
-            nationally recognized scholar and practitioner in real estate. He
-            has served as President of the American Real Estate Society and
-            holds the Counselor of Real Estate (CRE) designation.
-          </p>
-          <p>
-            With a career spanning academic research, consulting, and industry
-            leadership, Dr. Seagraves brings a unique perspective on the
-            intersection of theory and practice in brokerage management.
-          </p>
+        <div className="flex flex-col md:flex-row items-center md:items-start gap-8 max-w-3xl mx-auto">
+          <div className="flex-shrink-0">
+            <Image
+              src="/images/author-headshot.png"
+              alt="Dr. Philip Seagraves, PhD"
+              width={220}
+              height={220}
+              className="rounded-full shadow-lg border-4 border-gold/30"
+            />
+          </div>
+          <div className="text-gray-700 leading-relaxed text-center md:text-left">
+            <p className="mb-4">
+              <strong className="text-navy">Dr. Philip Seagraves, PhD</strong> is a
+              nationally recognized scholar and practitioner in real estate. He
+              has served as President of the American Real Estate Society and
+              holds the Counselor of Real Estate (CRE) designation.
+            </p>
+            <p className="mb-4">
+              A real estate broker, investor, developer, adviser, and consultant,
+              Dr. Seagraves brings a unique perspective that bridges academic
+              research and hands-on industry experience in brokerage management.
+            </p>
+            <p className="text-sm text-gray-500">
+              Former President, American Real Estate Society &bull; Counselor of Real Estate (CRE)
+            </p>
+          </div>
         </div>
       </section>
 

@@ -12,7 +12,7 @@ export const CONFIG = {
   maxDownloadsPerPurchase: 5,
 
   // PDF file path (relative to project root)
-  pdfFileName: "The-Modern-Brokerage.pdf",
+  pdfFileName: "The_Modern_Brokerage.pdf",
 
   // Stripe (stub for now)
   stripeEnabled: false,
