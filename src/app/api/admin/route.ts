@@ -41,8 +41,18 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error("Admin API error:", error);
+    // If tables don't exist yet, return empty data with a hint
+    const msg = (error as Error).message || "";
+    if (msg.includes("does not exist") || msg.includes("relation")) {
+      return NextResponse.json({
+        customers: [],
+        stats: { total_customers: 0, total_revenue: 0, offer_code_count: 0, paid_count: 0, total_downloads: 0 },
+        offerCodes: [],
+        needsSetup: true,
+      });
+    }
     return NextResponse.json(
-      { error: "Server error" },
+      { error: "Server error: " + msg },
       { status: 500 }
     );
   }

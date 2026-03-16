@@ -75,10 +75,13 @@ export default function AdminPage() {
         return;
       }
       const data = await res.json();
-      setCustomers(data.customers);
-      setOfferCodes(data.offerCodes);
-      setStats(data.stats);
+      setCustomers(data.customers || []);
+      setOfferCodes(data.offerCodes || []);
+      setStats(data.stats || { total_customers: 0, total_revenue: 0, offer_code_count: 0, paid_count: 0, total_downloads: 0 });
       setAuthenticated(true);
+      if (data.needsSetup) {
+        alert("Database tables not found. Click 'Setup DB' to initialize.");
+      }
     } catch {
       setError("Failed to load data.");
     }
