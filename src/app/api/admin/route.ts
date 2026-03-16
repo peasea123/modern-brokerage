@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import getDb from "@/lib/db";
+import { getDb } from "@/lib/db";
 import { CONFIG } from "@/lib/config";
 
 export async function GET(request: NextRequest) {
@@ -10,35 +10,35 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const db = getDb();
+    const sql = getDb();
 
-    const customers = db
-      .prepare(
-        `SELECT id, email, first_name, last_name, organization, role,
-                city, state, country, phone, how_heard,
-                payment_method, offer_code, amount_paid,
-                download_count, created_at
-         FROM customers ORDER BY created_at DESC`
-      )
-      .all();
+    const customers = await sql`
+      SELECT id, email, first_name, last_name, organization, role,
+             city, state, country, phone, how_heard,
+             payment_method, offer_code, amount_paid,
+             download_count, created_at
+      FROM customers ORDER BY created_at DESC
+    `;
 
-    const stats = db
-      .prepare(
-        `SELECT
-          COUNT(*) as total_customers,
-          SUM(amount_paid) as total_revenue,
-          SUM(CASE WHEN payment_method = 'offer_code' THEN 1 ELSE 0 END) as offer_code_count,
-          SUM(CASE WHEN payment_method = 'stripe' THEN 1 ELSE 0 END) as paid_count,
-          SUM(download_count) as total_downloads
-         FROM customers`
-      )
-      .get();
+    const statsRows = await sql`
+      SELECT
+        COUNT(*)::int as total_customers,
+        COALESCE(SUM(amount_paid), 0)::numeric as total_revenue,
+        COUNT(CASE WHEN payment_method = 'offer_code' THEN 1 END)::int as offer_code_count,
+        COUNT(CASE WHEN payment_method = 'stripe' THEN 1 END)::int as paid_count,
+        COALESCE(SUM(download_count), 0)::int as total_downloads
+      FROM customers
+    `;
 
-    const offerCodes = db
-      .prepare("SELECT * FROM offer_codes ORDER BY created_at DESC")
-      .all();
+    const offerCodes = await sql`
+      SELECT * FROM offer_codes ORDER BY created_at DESC
+    `;
 
-    return NextResponse.json({ customers, stats, offerCodes });
+    return NextResponse.json({
+      customers,
+      stats: statsRows[0],
+      offerCodes,
+    });
   } catch (error) {
     console.error("Admin API error:", error);
     return NextResponse.json(
@@ -66,10 +66,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    db.prepare(
-      "INSERT INTO offer_codes (code, description, discount_percent, max_uses) VALUES (?, ?, ?, ?)"
-    ).run(code.toUpperCase(), description, discountPercent || 100, maxUses || null);
+    const sql = getDb();
+    await sql`
+      INSERT INTO offer_codes (code, description, discount_percent, max_uses)
+      VALUES (${code.toUpperCase()}, ${description}, ${discountPercent || 100}, ${maxUses || null})
+    `;
 
     return NextResponse.json({ success: true });
   } catch (error) {

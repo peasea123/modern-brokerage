@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import getDb from "@/lib/db";
+import { getDb } from "@/lib/db";
 import { generateDownloadToken, getTokenExpiryDate } from "@/lib/tokens";
 import { CONFIG } from "@/lib/config";
 
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getDb();
+    const sql = getDb();
     let amountPaid = CONFIG.bookPrice;
 
     // Validate offer code if using one
@@ -41,23 +41,20 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const code = db
-        .prepare(
-          "SELECT * FROM offer_codes WHERE UPPER(code) = UPPER(?) AND is_active = 1"
-        )
-        .get(offerCode) as {
-        id: number;
-        discount_percent: number;
-        max_uses: number | null;
-        current_uses: number;
-      } | undefined;
+      const rows = await sql`
+        SELECT id, discount_percent, max_uses, current_uses
+        FROM offer_codes
+        WHERE UPPER(code) = UPPER(${offerCode}) AND is_active = true
+      `;
 
-      if (!code) {
+      if (rows.length === 0) {
         return NextResponse.json(
           { success: false, error: "Invalid offer code." },
           { status: 400 }
         );
       }
+
+      const code = rows[0];
 
       if (code.max_uses && code.current_uses >= code.max_uses) {
         return NextResponse.json(
@@ -69,22 +66,20 @@ export async function POST(request: NextRequest) {
       amountPaid = CONFIG.bookPrice * (1 - code.discount_percent / 100);
 
       // Increment usage
-      db.prepare(
-        "UPDATE offer_codes SET current_uses = current_uses + 1 WHERE id = ?"
-      ).run(code.id);
+      await sql`
+        UPDATE offer_codes SET current_uses = current_uses + 1 WHERE id = ${code.id}
+      `;
     }
 
     // For Stripe payment method (stubbed)
     if (paymentMethod === "stripe") {
       if (CONFIG.stripeEnabled) {
         // TODO: Create Stripe Checkout Session
-        // Return stripe checkout URL
         return NextResponse.json({
           success: false,
           error: "Payment processing is being configured. Please use an offer code for now.",
         });
       } else {
-        // Stub: allow through for testing (remove in production)
         return NextResponse.json({
           success: false,
           error:
@@ -98,30 +93,21 @@ export async function POST(request: NextRequest) {
     const tokenExpiresAt = getTokenExpiryDate();
 
     // Insert customer record
-    db.prepare(
-      `INSERT INTO customers (
+    await sql`
+      INSERT INTO customers (
         email, first_name, last_name, organization, role,
         city, state, country, phone, how_heard,
         payment_method, offer_code, amount_paid,
         download_token, token_expires_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(
-      email,
-      firstName,
-      lastName,
-      organization || null,
-      role || null,
-      city || null,
-      state || null,
-      country || "US",
-      phone || null,
-      howHeard || null,
-      paymentMethod,
-      offerCode || null,
-      amountPaid,
-      downloadToken,
-      tokenExpiresAt
-    );
+      ) VALUES (
+        ${email}, ${firstName}, ${lastName},
+        ${organization || null}, ${role || null},
+        ${city || null}, ${state || null}, ${country || "US"},
+        ${phone || null}, ${howHeard || null},
+        ${paymentMethod}, ${offerCode || null}, ${amountPaid},
+        ${downloadToken}, ${tokenExpiresAt}
+      )
+    `;
 
     return NextResponse.json({
       success: true,

@@ -89,6 +89,25 @@ export default function AdminPage() {
     await fetchData(password);
   };
 
+  const handleSetupDb = async () => {
+    if (!confirm("This will create the database tables and seed default offer codes. Continue?")) return;
+    try {
+      const res = await fetch("/api/admin/setup", {
+        method: "POST",
+        headers: { "x-admin-password": password },
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Database initialized! " + data.message);
+        await fetchData(password);
+      } else {
+        alert("Setup failed: " + (data.error || "Unknown error"));
+      }
+    } catch {
+      alert("Setup request failed. Check your DATABASE_URL.");
+    }
+  };
+
   const handleCreateCode = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -275,6 +294,12 @@ export default function AdminPage() {
             className="py-2 px-4 rounded font-medium bg-gray-200 text-gray-600 hover:bg-gray-300"
           >
             Refresh
+          </button>
+          <button
+            onClick={handleSetupDb}
+            className="py-2 px-4 rounded font-medium bg-blue-600 text-white hover:bg-blue-700"
+          >
+            Setup DB
           </button>
         </div>
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import getDb from "@/lib/db";
+import { getDb } from "@/lib/db";
 import { isTokenExpired } from "@/lib/tokens";
 import { CONFIG } from "@/lib/config";
 import path from "path";
@@ -11,26 +11,22 @@ export async function GET(
 ) {
   try {
     const { token } = await params;
-    const db = getDb();
+    const sql = getDb();
 
-    const customer = db
-      .prepare("SELECT * FROM customers WHERE download_token = ?")
-      .get(token) as {
-      id: number;
-      email: string;
-      first_name: string;
-      last_name: string;
-      download_count: number;
-      max_downloads: number;
-      token_expires_at: string;
-    } | undefined;
+    const rows = await sql`
+      SELECT id, email, first_name, last_name, download_count, max_downloads, token_expires_at
+      FROM customers
+      WHERE download_token = ${token}
+    `;
 
-    if (!customer) {
+    if (rows.length === 0) {
       return NextResponse.json(
         { error: "Invalid download link." },
         { status: 404 }
       );
     }
+
+    const customer = rows[0];
 
     if (isTokenExpired(customer.token_expires_at)) {
       return NextResponse.json(
@@ -64,14 +60,17 @@ export async function GET(
       "unknown";
     const userAgent = request.headers.get("user-agent") || "unknown";
 
-    db.prepare(
-      "INSERT INTO download_logs (customer_id, ip_address, user_agent) VALUES (?, ?, ?)"
-    ).run(customer.id, ip, userAgent);
+    await sql`
+      INSERT INTO download_logs (customer_id, ip_address, user_agent)
+      VALUES (${customer.id}, ${ip}, ${userAgent})
+    `;
 
     // Increment download count
-    db.prepare(
-      "UPDATE customers SET download_count = download_count + 1, updated_at = datetime('now') WHERE id = ?"
-    ).run(customer.id);
+    await sql`
+      UPDATE customers
+      SET download_count = download_count + 1, updated_at = NOW()
+      WHERE id = ${customer.id}
+    `;
 
     // Stream the PDF
     const fileBuffer = fs.readFileSync(pdfPath);

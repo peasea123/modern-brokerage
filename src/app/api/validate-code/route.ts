@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import getDb from "@/lib/db";
+import { getDb } from "@/lib/db";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,27 +12,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getDb();
-    const offerCode = db
-      .prepare(
-        "SELECT * FROM offer_codes WHERE UPPER(code) = UPPER(?) AND is_active = 1"
-      )
-      .get(code) as {
-      id: number;
-      code: string;
-      description: string;
-      discount_percent: number;
-      max_uses: number | null;
-      current_uses: number;
-    } | undefined;
+    const sql = getDb();
+    const rows = await sql`
+      SELECT id, code, description, discount_percent, max_uses, current_uses
+      FROM offer_codes
+      WHERE UPPER(code) = UPPER(${code}) AND is_active = true
+    `;
 
-    if (!offerCode) {
+    if (rows.length === 0) {
       return NextResponse.json({
         valid: false,
         message: "Invalid offer code",
         discount: 0,
       });
     }
+
+    const offerCode = rows[0];
 
     if (offerCode.max_uses && offerCode.current_uses >= offerCode.max_uses) {
       return NextResponse.json({
