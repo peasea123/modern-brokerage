@@ -185,30 +185,39 @@ export default function AdminPage() {
       "Downloads",
       "Date",
     ];
+    const esc = (val: string | number | null | undefined) => {
+      const s = String(val ?? "");
+      return s.includes(",") || s.includes('"') || s.includes("\n")
+        ? `"${s.replace(/"/g, '""')}"`
+        : s;
+    };
     const rows = customers.map((c) => [
-      `${c.first_name} ${c.last_name}`,
-      c.email,
-      c.organization || "",
-      c.role || "",
-      c.city || "",
-      c.state || "",
-      c.country || "",
-      c.phone || "",
-      c.how_heard || "",
-      c.payment_method,
-      c.offer_code || "",
-      c.amount_paid.toFixed(2),
+      esc(`${c.first_name} ${c.last_name}`),
+      esc(c.email),
+      esc(c.organization),
+      esc(c.role),
+      esc(c.city),
+      esc(c.state),
+      esc(c.country),
+      esc(c.phone),
+      esc(c.how_heard),
+      esc(c.payment_method),
+      esc(c.offer_code),
+      Number(c.amount_paid || 0).toFixed(2),
       c.download_count,
       c.created_at,
     ]);
 
-    const csv = [headers, ...rows].map((r) => r.join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
+    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+    const bom = "\uFEFF";
+    const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8" });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
     a.download = `modern-brokerage-customers-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
   };
 
