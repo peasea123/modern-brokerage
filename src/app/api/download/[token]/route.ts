@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { isTokenExpired } from "@/lib/tokens";
 import { CONFIG } from "@/lib/config";
-import path from "path";
-import fs from "fs";
 
 export async function GET(
   request: NextRequest,
@@ -44,9 +42,9 @@ export async function GET(
       );
     }
 
-    // Check if PDF exists
-    const pdfPath = path.join(process.cwd(), "data", CONFIG.pdfFileName);
-    if (!fs.existsSync(pdfPath)) {
+    // Get the PDF URL from env (set after uploading to Vercel Blob)
+    const pdfUrl = CONFIG.pdfBlobUrl;
+    if (!pdfUrl) {
       return NextResponse.json(
         { error: "The book file is not yet available. Please check back soon." },
         { status: 404 }
@@ -72,16 +70,24 @@ export async function GET(
       WHERE id = ${customer.id}
     `;
 
-    // Stream the PDF
-    const fileBuffer = fs.readFileSync(pdfPath);
+    // Fetch the PDF from Vercel Blob and stream it to the user
+    const pdfResponse = await fetch(pdfUrl);
+    if (!pdfResponse.ok) {
+      return NextResponse.json(
+        { error: "Failed to retrieve the book file." },
+        { status: 500 }
+      );
+    }
+
+    const pdfBuffer = await pdfResponse.arrayBuffer();
     const fileName = `The-Modern-Brokerage-${customer.first_name}-${customer.last_name}.pdf`;
 
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(pdfBuffer, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${fileName}"`,
-        "Content-Length": fileBuffer.length.toString(),
+        "Content-Length": pdfBuffer.byteLength.toString(),
         "Cache-Control": "no-store",
       },
     });

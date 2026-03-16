@@ -59,6 +59,7 @@ export default function AdminPage() {
     discountPercent: 100,
     maxUses: "",
   });
+  const [uploading, setUploading] = useState(false);
 
   const fetchData = async (pw: string) => {
     setLoading(true);
@@ -106,6 +107,35 @@ export default function AdminPage() {
     } catch {
       alert("Setup request failed. Check your DATABASE_URL.");
     }
+  };
+
+  const handleUploadPdf = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.endsWith(".pdf")) {
+      alert("Please select a PDF file.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        headers: { "x-admin-password": password },
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message);
+      } else {
+        alert("Upload failed: " + (data.error || "Unknown error"));
+      }
+    } catch {
+      alert("Upload failed. Make sure BLOB_READ_WRITE_TOKEN is set.");
+    }
+    setUploading(false);
+    e.target.value = "";
   };
 
   const handleCreateCode = async (e: React.FormEvent) => {
@@ -301,6 +331,16 @@ export default function AdminPage() {
           >
             Setup DB
           </button>
+          <label className="py-2 px-4 rounded font-medium bg-purple-600 text-white hover:bg-purple-700 cursor-pointer">
+            {uploading ? "Uploading..." : "Upload PDF"}
+            <input
+              type="file"
+              accept=".pdf"
+              onChange={handleUploadPdf}
+              className="hidden"
+              disabled={uploading}
+            />
+          </label>
         </div>
 
         {/* Customers Table */}

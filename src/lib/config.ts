@@ -11,8 +11,9 @@ export const CONFIG = {
   downloadTokenExpiryHours: 72, // tokens expire after 72 hours
   maxDownloadsPerPurchase: 5,
 
-  // PDF file path (relative to project root)
+  // PDF storage
   pdfFileName: "The_Modern_Brokerage.pdf",
+  pdfBlobUrl: process.env.PDF_BLOB_URL || "",
 
   // Stripe (stub for now)
   stripeEnabled: false,
