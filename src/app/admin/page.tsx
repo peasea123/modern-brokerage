@@ -276,7 +276,7 @@ export default function AdminPage() {
             <div className="bg-white rounded-lg shadow p-4">
               <p className="text-sm text-gray-500">Revenue</p>
               <p className="text-3xl font-bold text-green-600">
-                ${(stats.total_revenue || 0).toFixed(2)}
+                ${Number(stats.total_revenue || 0).toFixed(2)}
               </p>
             </div>
             <div className="bg-white rounded-lg shadow p-4">
@@ -402,7 +402,7 @@ export default function AdminPage() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        ${c.amount_paid.toFixed(2)}
+                        ${Number(c.amount_paid || 0).toFixed(2)}
                       </td>
                       <td className="px-4 py-3">{c.download_count}</td>
                       <td className="px-4 py-3 text-gray-500">
